@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  www:
+    build:
+      dockerfile: ./dockerfile.www
+    volumes:
+      - "./stock_backend:/app/stock_backend"
+      - "./db:/app/db"
+      - "./alembic.ini:/app/alembic.ini"  # ✅ Correctly mount alembic.ini
+    ports:
+      - "80:80"
+    environment:
+      IS_DEV: "true"
+      RELOAD: "true"
+      DATABASE_URL: postgresql://main:main12345@db/main
+      CELERY_BROKER: redis://redis:6379/0
+      PYTHONPATH: /app
+    depends_on:
+      - db
+      - redis
+
+  celery-scheduler:
+    build:
+      dockerfile: ./dockerfile.celery
+    volumes:
+      - "./:/app"
+    working_dir: /app
+    command: celery -A stock_backend.celery worker --loglevel=info --beat
+    environment:
+      IS_DEV: "true"
+      DATABASE_URL: postgresql://main:main12345@db/main
+      CELERY_BROKER: redis://redis:6379/0
+      PYTHONPATH: /app
+    depends_on:
+      - db
+      - redis
+
+  celery-node:
+    build:
+      dockerfile: ./dockerfile.celery
+    volumes:
+      - "./:/app"
+    working_dir: /app
+    command: celery -A stock_backend.celery worker --loglevel=info
+    environment:
+      IS_DEV: "true"
+      DATABASE_URL: postgresql://main:main12345@db/main
+      CELERY_BROKER: redis://redis:6379/0
+      PYTHONPATH: /app
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:7-alpine  # 🧼 lightweight version
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: main
+      POSTGRES_PASSWORD: main12345
+      POSTGRES_DB: main
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U main"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

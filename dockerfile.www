@@ -1,0 +1,19 @@
+FROM python:3.10
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./stock_backend ./stock_backend
+COPY ./db ./db
+COPY alembic.ini .
+
+COPY ./docker/www/prestart.sh ./prestart.sh
+RUN chmod +x ./prestart.sh
+RUN chmod 644 alembic.ini
+
+CMD ["sh", "./prestart.sh"]
+

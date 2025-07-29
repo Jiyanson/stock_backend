@@ -1,0 +1,75 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=67.0", "setuptools_scm[toml]>=7.1"]
+
+[project]
+authors = [{"name" = "ayoub"}]
+description = "."
+dynamic = ["version"]
+license = {"file" = "LICENSE"}
+name = "stock_backend"
+readme = {file = "README.md", content-type = "text/markdown"}
+dependencies = [
+  "aiosqlite",
+  "alembic",
+  "asyncpg",
+  "celery",
+  "fastapi",
+  "psycopg2-binary",
+  "pydantic~=2.0",
+  "pydantic-settings",
+  "SQLAlchemy",
+  "redis",
+  "typer"
+]
+
+[project.optional-dependencies]
+dev = [
+  "build",
+  "dapperdata",
+  "glom",
+  "mypy",
+  "paracelsus",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-pretty",
+  "ruamel.yaml",
+  "ruff",
+  "toml-sort",
+  "uv"
+]
+
+[project.scripts]
+stock_backend = "stock_backend.cli:app"
+
+[tool.coverage.run]
+omit = [
+  "./stock_backend/_version.py",
+  "./stock_backend/__init__.py",
+  "./tests/*"
+]
+concurrency = ["thread", "greenlet"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+exclude = [".venv", "./stock_backend/_version.py"]
+line-length = 120
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"]}
+
+[tool.setuptools.package-data]
+stock_backend = ["py.typed"]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0-dev"
+write_to = "stock_backend/_version.py"
