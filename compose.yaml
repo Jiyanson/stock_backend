@@ -7,7 +7,7 @@ services:
     volumes:
       - "./stock_backend:/app/stock_backend"
       - "./db:/app/db"
-      - "./alembic.ini:/app/alembic.ini"  # ✅ Correctly mount alembic.ini
+      # Remove alembic.ini mount to avoid permission issues
     ports:
       - "80:80"
     environment:
@@ -17,8 +17,11 @@ services:
       CELERY_BROKER: redis://redis:6379/0
       PYTHONPATH: /app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
 
   celery-scheduler:
     build:
@@ -33,8 +36,11 @@ services:
       CELERY_BROKER: redis://redis:6379/0
       PYTHONPATH: /app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
 
   celery-node:
     build:
@@ -49,11 +55,19 @@ services:
       CELERY_BROKER: redis://redis:6379/0
       PYTHONPATH: /app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
 
   redis:
-    image: redis:7-alpine  # 🧼 lightweight version
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   db:
     image: postgres:13
@@ -63,8 +77,14 @@ services:
       POSTGRES_DB: main
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U main"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U main -d main"]
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:

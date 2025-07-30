@@ -7,13 +7,23 @@ RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/a
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy files with proper permissions
 COPY ./stock_backend ./stock_backend
 COPY ./db ./db
+
+# Install the package in development mode
+COPY pyproject.toml .
+RUN pip install -e .
+
+# Copy alembic.ini AFTER installing the package
 COPY alembic.ini .
+
+# Fix permissions explicitly
+RUN chmod 644 alembic.ini
+RUN chmod -R 755 ./db
+RUN chmod -R 755 ./stock_backend
 
 COPY ./docker/www/prestart.sh ./prestart.sh
 RUN chmod +x ./prestart.sh
-RUN chmod 644 alembic.ini
 
 CMD ["sh", "./prestart.sh"]
-
